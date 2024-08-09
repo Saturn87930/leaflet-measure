@@ -13,15 +13,18 @@ $button-icon-size: 12px;
 $button-icon-spacing: 4px;
 
 @mixin hoverbutton {
-  color: $color-button;
-  text-decoration: none;
+  & {
+    color: $color-button;
+    text-decoration: none;
+  }
+
   &:hover {
     opacity: 0.5;
     text-decoration: none;
   }
 }
 
-@mixin button ($icon) {
+@mixin button($icon) {
   display: inline;
   width: auto;
   height: auto;
@@ -31,18 +34,19 @@ $button-icon-spacing: 4px;
   border: 0;
   text-align: left;
   color: $color-button;
-  &,
-  &:hover {
-    background-color: transparent;
-  }
   background: {
-    image: url('assets/#{ $icon }.png');
+    image: url('../assets/#{ $icon }.png');
     repeat: no-repeat;
     position: 0% 50%;
     size: $button-icon-size $button-icon-size;
   }
   .leaflet-retina & {
-    background-image: url('assets/#{ $icon }_@2X.png');
+    background-image: url('../assets/#{ $icon }_@2X.png');
+  }
+
+  &,
+  &:hover {
+    background-color: transparent;
   }
 
   @include hoverbutton;
@@ -91,9 +95,14 @@ $button-icon-spacing: 4px;
 
   .leaflet-control-measure-toggle,
   .leaflet-control-measure-toggle:hover {
+    // Hide text
+    text-indent: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+
     background: {
       size: 14px 14px;
-      image: url(assets/rulers.png);
+      image: url(../assets/rulers.png);
     }
     border: 0;
     border-radius: 4px;
@@ -101,13 +110,8 @@ $button-icon-spacing: 4px;
       border-radius: 2px;
     }
 
-    // Hide text
-    text-indent: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-
     .leaflet-retina & {
-      background-image: url(assets/rulers_@2X.png);
+      background-image: url(../assets/rulers_@2X.png);
     }
 
     .leaflet-touch & {
