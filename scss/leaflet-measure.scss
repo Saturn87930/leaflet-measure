@@ -162,6 +162,10 @@ $button-icon-spacing: 4px;
   a.finish {
     @include button(check);
   }
+
+  a.link {
+    @include button(link);
+  }
 }
 
 .leaflet-measure-resultpopup {
@@ -170,5 +174,8 @@ $button-icon-spacing: 4px;
   }
   a.deletemarkup {
     @include button(trash);
+  }
+  a.link {
+    @include button(link);
   }
 }
