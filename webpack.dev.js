@@ -43,8 +43,8 @@ module.exports = {
         test: /\.scss$/i,
         use: [
           ExtractCSSPlugin.loader,
-          { loader: 'css-loader' },
-          { loader: 'resolve-url-loader' },
+          { loader: 'css-loader', options: { sourceMap: true } },
+          { loader: 'resolve-url-loader', options: { sourceMap: true, root: '' } },
           {
             loader: 'sass-loader',
             options: {
