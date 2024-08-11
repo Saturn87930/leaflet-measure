@@ -2,62 +2,75 @@ const glob = require('glob');
 const resolve = require('path').resolve;
 
 const CopyPlugin = require('copy-webpack-plugin');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
-const I18nPlugin = require('i18n-webpack-plugin');
+const ExtractCSSPlugin = require('mini-css-extract-plugin');
+const LocalizePlugin = require('webpack-localize-assets-plugin');
 
 const BUILD_DIR = resolve(__dirname, 'dist');
 
-const copyAssets = new CopyPlugin([{ from: './assets', to: 'assets', ignore: '*.svg' }]);
-const copySite = new CopyPlugin([{ from: './example', to: './' }]);
+const copyAssets = new CopyPlugin({
+  patterns: [
+    {
+      from: './assets',
+      to: 'assets',
+      globOptions: {
+        ignore: ['*.svg'],
+      },
+    },
+  ],
+});
+const copySite = new CopyPlugin({ patterns: [{ from: './example', to: './' }] });
 
-const extractSass = new ExtractTextPlugin({ filename: 'leaflet-measure.css' });
+const extractSass = new ExtractCSSPlugin({ filename: 'leaflet-measure.css' });
 
-const jsLoader = {
-  test: /\.js$/,
-  exclude: /node_modules/,
-  use: {
-    loader: 'babel-loader?optional=runtime',
-    options: { presets: ['babel-preset-env'] }
-  }
-};
-
-const htmlLoader = {
-  test: /\.html$/,
-  use: { loader: 'html-loader?interpolate' }
-};
-
-const scssLoader = {
-  test: /\.scss$/,
-  use: extractSass.extract({
-    use: [{ loader: 'css-loader', options: { url: false } }, { loader: 'sass-loader' }],
-    fallback: 'style-loader'
-  })
-};
-
-// Build for all languages in the in `./languages` using I18nPlugin
-const languages = glob.sync('./languages/*.json').reduce(
+// Build for all languages in the in `./languages`
+const re = /\/?languages\/(.+).json/;
+const locales = glob.sync('./languages/*.json').reduce(
   (dict, filePath) => {
-    const match = /\/languages\/(.+).json/.exec(filePath);
-    dict[match[1]] = require(filePath);
+    const match = re.exec(filePath);
+    dict[match[1]] = filePath;
     return dict;
   },
   {
-    default: require(`./languages/en.json`)
-  }
+    default: `./languages/en.json`,
+  },
 );
 
-module.exports = Object.keys(languages).map(language => {
-  const langPrefix = language === 'default' ? '' : `.${language}`;
-  return {
-    entry: ['./src/leaflet-measure.js'],
-    output: {
-      filename: `leaflet-measure${langPrefix}.js`,
-      path: BUILD_DIR,
-      publicPath: '/dist/'
-    },
-    module: {
-      rules: [jsLoader, htmlLoader, scssLoader]
-    },
-    plugins: [copySite, copyAssets, extractSass, new I18nPlugin(languages[language])]
-  };
-});
+module.exports = {
+  entry: ['./src/leaflet-measure.js'],
+  output: {
+    filename: `leaflet-measure.[locale].js`,
+    path: BUILD_DIR,
+    publicPath: '',
+  },
+  module: {
+    rules: [
+      {
+        test: /\.m?js$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: { presets: ['@babel/preset-env'] },
+        },
+      },
+      {
+        test: /\.html$/,
+        use: { loader: 'html-loader', options: { interpolate: true } },
+      },
+      {
+        test: /\.scss$/i,
+        use: [
+          ExtractCSSPlugin.loader,
+          { loader: 'css-loader', options: { sourceMap: true } },
+          { loader: 'resolve-url-loader', options: { sourceMap: true, root: '' } },
+          {
+            loader: 'sass-loader',
+            options: {
+              sourceMap: true,
+            },
+          },
+        ],
+      },
+    ],
+  },
+  plugins: [copySite, copyAssets, extractSass, new LocalizePlugin({ locales })],
+};
