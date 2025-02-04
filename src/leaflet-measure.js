@@ -278,6 +278,7 @@ L.Control.Measure = L.Control.extend({
         sqfeet: __('sqfeet'),
         sqmeters: __('sqmeters'),
         sqmiles: __('sqmiles'),
+        sqkilometers: __('sqkilometers'),
       };
 
       const u = L.extend({ factor: 1, decimals: 0 }, unit);
@@ -309,36 +310,75 @@ L.Control.Measure = L.Control.extend({
     return url;
   },
 
+  // _getlsd: function (measurement) {
+  //   // generate a random id for the measurement label in the interface
+  //   const lsd_id = Math.random().toString(36).substring(7);
+  //   fetch('https://ats.production.cleargrid.7627.network/ats/at', {
+  //     method: 'POST',
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //     body: JSON.stringify({
+  //       latitude: measurement.center.y,
+  //       longitude: measurement.center.x,
+  //       key: 'leaflet-measure',
+  //     }),
+  //   })
+  //     .then((response) => {
+  //       console.log(response);
+  //       //if we got a 200 response, return the json otherwise raise an error
+  //       return response.json();
+  //     })
+  //     .then((data) => {
+  //       console.log(data);
+  //       let legal = data.legal ? data.legal : data.Error;
+  //       console.log(legal);
+  //       const e = document.getElementById(`lsd_${lsd_id}`);
+  //       if (e) {
+  //         e.innerHTML = legal;
+  //       }
+  //     });
+  //   return `<span class=lsd>LSD:&nbsp;<span id="lsd_${lsd_id}">Loading...</span></span>`;
+  // },
+
+
   _getlsd: function (measurement) {
-    // generate a random id for the measurement label in the interface
-    const lsd_id = Math.random().toString(36).substring(7);
-    fetch('https://ats.production.cleargrid.7627.network/ats/at', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        latitude: measurement.center.y,
-        longitude: measurement.center.x,
-        key: 'leaflet-measure',
-      }),
-    })
+    // Generate a random id for the measurement label in the interface
+    const lsd_id = Math.random().toString(36).substring(7);    
+    // Construct the latitude and longitude string for the Google Elevation API
+    const latlon = `${measurement.center.y},${measurement.center.x}`;    
+    // Construct the URL for the Google Elevation API request
+    const url = `https://seep.eu.org/https://maps.googleapis.com/maps/api/elevation/json?locations=${latlon}&key=`;
+    fetch(url)
       .then((response) => {
-        console.log(response);
-        //if we got a 200 response, return the json otherwise raise an error
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
         return response.json();
       })
       .then((data) => {
-        console.log(data);
-        let legal = data.legal ? data.legal : data.Error;
-        console.log(legal);
+        // console.log(data);        
+        // Check if the elevation data is available
+        let elevation = 'Elevation data not available';
+        if (data.results && data.results.length > 0) {
+          elevation = `${data.results[0].elevation.toFixed(2)}米`;
+        }
+
         const e = document.getElementById(`lsd_${lsd_id}`);
         if (e) {
-          e.innerHTML = legal;
+          e.innerHTML = elevation;
+        }
+      })
+      .catch((error) => {
+        // console.error('There was a problem with the fetch operation:', error);
+        const e = document.getElementById(`lsd_${lsd_id}`);
+        if (e) {
+          e.innerHTML = 'Error fetching elevation data';
         }
       });
-    return `<span class=lsd>LSD:&nbsp;<span id="lsd_${lsd_id}">Loading...</span></span>`;
+    return `<span class="lsd">高程:&nbsp;<span id="lsd_${lsd_id}">加载中...</span></span>`;
   },
+
 
   // update results area of dom with calced measure from `this._latlngs`
   _updateResults: function () {
